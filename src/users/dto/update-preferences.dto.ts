@@ -1,4 +1,12 @@
-import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  Max,
+  Min,
+} from 'class-validator';
 import { Currency } from '../../generated/prisma/enums.js';
 
 export class UpdatePreferencesDto {

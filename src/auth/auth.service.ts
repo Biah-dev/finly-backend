@@ -31,7 +31,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
+    const passwordMatches = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid email or password.');
     }
@@ -40,7 +43,10 @@ export class AuthService {
   }
 
   private async issueToken(user: UserModel) {
-    const token = await this.jwtService.signAsync({ sub: user.id, email: user.email });
+    const token = await this.jwtService.signAsync({
+      sub: user.id,
+      email: user.email,
+    });
     return { token, user: this.usersService.toPublicUser(user) };
   }
 }

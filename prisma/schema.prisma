@@ -57,6 +57,55 @@ model BankConnection {
   connectorImageUrl String?
   status            String
 
+  lastSyncedAt DateTime?
+
+  accounts Account[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id               String         @id @default(uuid())
+  bankConnectionId String
+  bankConnection   BankConnection @relation(fields: [bankConnectionId], references: [id], onDelete: Cascade)
+
+  pluggyAccountId String  @unique
+  type            String
+  subtype         String?
+  name            String
+  number          String?
+  currencyCode    String
+  balance         Decimal @db.Decimal(14, 2)
+
+  // Day of month the credit card statement closes. Transactions are grouped
+  // into billing periods using this value; only meaningful for CREDIT accounts.
+  billingCycleDay Int?
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id        String  @id @default(uuid())
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  pluggyTransactionId String   @unique
+  description         String
+  amount              Decimal  @db.Decimal(14, 2)
+  currencyCode        String
+  date                DateTime
+  category            String?
+  categoryId          String?
+  type                String
+  status              String
+  balance             Decimal? @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([accountId, date])
 }

@@ -1,4 +1,11 @@
-import { Body, Controller, Get, NotFoundException, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard, type AuthTokenPayload } from '../auth/auth.guard.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto.js';
@@ -20,7 +27,10 @@ export class UsersController {
   }
 
   @Patch()
-  async updateProfile(@CurrentUser() payload: AuthTokenPayload, @Body() dto: UpdateProfileDto) {
+  async updateProfile(
+    @CurrentUser() payload: AuthTokenPayload,
+    @Body() dto: UpdateProfileDto,
+  ) {
     const user = await this.usersService.updateProfile(payload.sub, dto);
     return this.usersService.toPublicUser(user);
   }
@@ -31,7 +41,10 @@ export class UsersController {
   }
 
   @Patch('preferences')
-  updatePreferences(@CurrentUser() payload: AuthTokenPayload, @Body() dto: UpdatePreferencesDto) {
+  updatePreferences(
+    @CurrentUser() payload: AuthTokenPayload,
+    @Body() dto: UpdatePreferencesDto,
+  ) {
     return this.usersService.updatePreferences(payload.sub, dto);
   }
 }

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, NotFoundException, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { UsersService } from '../users/users.service.js';
@@ -19,7 +28,10 @@ export class AuthController {
   ) {}
 
   @Post('signup')
-  async signup(@Body() dto: SignupDto, @Res({ passthrough: true }) res: Response) {
+  async signup(
+    @Body() dto: SignupDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { token, user } = await this.authService.signup(dto);
     this.setAuthCookie(res, token);
     return user;
@@ -27,7 +39,10 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { token, user } = await this.authService.login(dto);
     this.setAuthCookie(res, token, dto.rememberMe ?? true);
     return user;

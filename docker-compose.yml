@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:16-alpine
-    restart: unless-stopped
     environment:
       POSTGRES_USER: finances
       POSTGRES_PASSWORD: finances

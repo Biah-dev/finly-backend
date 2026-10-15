@@ -1,5 +1,12 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { UserModel, UserPreferencesModel } from '../generated/prisma/models.js';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type {
+  UserModel,
+  UserPreferencesModel,
+} from '../generated/prisma/models.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { UpdatePreferencesDto } from './dto/update-preferences.dto.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
@@ -42,7 +49,9 @@ export class UsersService {
     if (dto.email) {
       const existing = await this.findByEmail(dto.email);
       if (existing && existing.id !== userId) {
-        throw new ConflictException('An account with this email already exists.');
+        throw new ConflictException(
+          'An account with this email already exists.',
+        );
       }
     }
 

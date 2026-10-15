@@ -22,6 +22,34 @@ interface PluggyItem {
   connector: PluggyItemConnector;
 }
 
+export interface PluggyAccount {
+  id: string;
+  type: string;
+  subtype: string | null;
+  name: string;
+  number: string | null;
+  currencyCode: string;
+  balance: number;
+}
+
+export interface PluggyTransaction {
+  id: string;
+  description: string;
+  currencyCode: string;
+  amount: number;
+  date: string;
+  category: string | null;
+  categoryId: string | null;
+  type: string;
+  status: string;
+  balance: number | null;
+}
+
+interface PluggyCursorResponse<T> {
+  results: T[];
+  next: string | null;
+}
+
 @Injectable()
 export class PluggyService {
   private readonly logger = new Logger(PluggyService.name);
@@ -31,6 +59,13 @@ export class PluggyService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {}
+
+  private async logFetchFailure(context: string, res: Response): Promise<void> {
+    const body = await res.text().catch(() => '<unreadable body>');
+    this.logger.error(
+      `${context} failed: ${res.status} ${res.statusText} - ${body}`,
+    );
+  }
 
   private async getApiKey(): Promise<string> {
     if (this.cachedApiKey && this.cachedApiKey.expiresAt > Date.now()) {
@@ -52,11 +87,15 @@ export class PluggyService {
     });
 
     if (!res.ok) {
+      await this.logFetchFailure('Pluggy auth', res);
       throw new BadGatewayException('Could not authenticate with Pluggy.');
     }
 
     const data = (await res.json()) as { apiKey: string };
-    this.cachedApiKey = { key: data.apiKey, expiresAt: Date.now() + API_KEY_TTL_MS };
+    this.cachedApiKey = {
+      key: data.apiKey,
+      expiresAt: Date.now() + API_KEY_TTL_MS,
+    };
     return data.apiKey;
   }
 
@@ -70,6 +109,7 @@ export class PluggyService {
     });
 
     if (!res.ok) {
+      await this.logFetchFailure('Pluggy connect token creation', res);
       throw new BadGatewayException('Could not create a Pluggy connect token.');
     }
 
@@ -84,10 +124,64 @@ export class PluggyService {
     });
 
     if (!res.ok) {
+      await this.logFetchFailure(`Pluggy item fetch (${itemId})`, res);
       throw new NotFoundException('Bank connection not found on Pluggy.');
     }
 
     return res.json() as Promise<PluggyItem>;
+  }
+
+  async fetchAccounts(itemId: string): Promise<PluggyAccount[]> {
+    const apiKey = await this.getApiKey();
+    const res = await fetch(`${PLUGGY_API_URL}/accounts?itemId=${itemId}`, {
+      headers: { 'X-API-KEY': apiKey },
+    });
+
+    if (!res.ok) {
+      await this.logFetchFailure(`Pluggy accounts fetch (item ${itemId})`, res);
+      throw new BadGatewayException('Could not fetch accounts from Pluggy.');
+    }
+
+    const data = (await res.json()) as { results: PluggyAccount[] };
+    return data.results;
+  }
+
+  async fetchTransactions(
+    accountId: string,
+    from?: Date,
+  ): Promise<PluggyTransaction[]> {
+    const apiKey = await this.getApiKey();
+    const transactions: PluggyTransaction[] = [];
+
+    const params = new URLSearchParams({ accountId });
+    if (from) {
+      params.set('dateFrom', from.toISOString().slice(0, 10));
+    }
+
+    let next: string | null = `?${params.toString()}`;
+
+    while (next) {
+      const res = await fetch(`${PLUGGY_API_URL}/v2/transactions${next}`, {
+        headers: { 'X-API-KEY': apiKey },
+      });
+
+      if (!res.ok) {
+        await this.logFetchFailure(
+          `Pluggy transactions fetch (account ${accountId})`,
+          res,
+        );
+        throw new BadGatewayException(
+          'Could not fetch transactions from Pluggy.',
+        );
+      }
+
+      const data =
+        (await res.json()) as PluggyCursorResponse<PluggyTransaction>;
+      transactions.push(...data.results);
+      next = data.next;
+    }
+
+    return transactions;
   }
 
   listConnections(userId: string) {
